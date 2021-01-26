@@ -62,4 +62,25 @@ defmodule Soap.RequestTest do
       assert(Request.call(wsdl, operation, params) == @request_with_header)
     end
   end
+
+  test "#call takes a tuple with custom soap headers" do
+    {_, wsdl} = Fixtures.get_file_path("wsdl/SoapHeader.wsdl") |> Wsdl.parse_from_file()
+    operation = "sayHello"
+    headers = {:Security, %{xmlns: "http://test.com"}, [%{UsernameToken: "foo", Password: "bar"}]}
+    params = {headers, %{body: "Hello John"}}
+
+    expected_headers =
+      ~S(<env:Header>
+      <Security xmlns="http://test.com">
+        <Password>bar</Password>
+        <UsernameToken>foo</UsernameToken>
+      </Security>
+    </env:Header>)
+      |> String.replace(~r/>\n.*?</, "><")
+      |> String.trim()
+
+    with_mock HTTPoison, post: fn _, body, _, _ -> body end do
+      assert(Request.call(wsdl, operation, params) =~ expected_headers)
+    end
+  end
 end

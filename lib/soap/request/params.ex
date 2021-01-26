@@ -168,6 +168,11 @@ defmodule Soap.Request.Params do
     params |> Enum.map(&construct_xml_request_header/1)
   end
 
+  @spec construct_xml_request_header(params :: {atom() | binary(), map(), list()}) :: tuple()
+  defp construct_xml_request_header({tag, %{} = attributes, children}) when is_list(children) do
+    {tag, attributes, construct_xml_request_header(children)}
+  end
+
   @spec construct_xml_request_header(params :: tuple()) :: tuple()
   defp construct_xml_request_header(params) when is_tuple(params) do
     params
@@ -194,6 +199,11 @@ defmodule Soap.Request.Params do
       |> prepare_action_tag(operation)
 
     [element(action_tag, action_tag_attributes, body)]
+  end
+
+  @spec add_header_part_tag_wrapper({atom() | binary(), map(), list()}, map(), String.t()) :: list()
+  defp add_header_part_tag_wrapper({tag, attributes, [_ | _] = children}, _wsdl, _operation) do
+    [element(tag, attributes, children)]
   end
 
   @spec add_header_part_tag_wrapper(list(), map(), String.t()) :: list()
